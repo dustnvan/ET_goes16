@@ -56,7 +56,7 @@ def redownload_hdf_files(url, filename):
 
     while attempts < max_attempts:
         if not check_hdf_file(filename):
-            print(f"File not opening. Redownloading...")
+            print("File not opening. Redownloading...")
             download_file(url, filename)
         else:
             return
@@ -67,21 +67,20 @@ def redownload_hdf_files(url, filename):
 
 # checks if website is running
 def website_check():
-    url = 'https://data.nas.nasa.gov/geonex/geonexdata'
+    url = 'https://data.nas.nasa.gov/geonex/data.php'
     retry_delay = 1
 
     while True:
         try:
             response = requests.head(url)
             if response.status_code == 200:
-                print("Website is running. Resuming script...")
                 return True
             else:
-                print("Website is not available. Pausing script...")
+                print(f"Website is not available. Pausing script... {retry_delay} seconds")
                 time.sleep(retry_delay)  # Pause for 60 seconds before checking again
 
         except requests.ConnectionError:
-            print("Website is not available. Pausing script...")
+            print(f"Website is not available. Pausing script... {retry_delay} seconds")
             time.sleep(retry_delay) # Pause for 60 seconds before checking again
 
         retry_delay *= 2
@@ -91,8 +90,8 @@ if __name__ == '__main__':
     # output_dir = 'C:\datasets\images\goes\goes16\geonexl1g'
 
     basiclink = 'https://data.nas.nasa.gov/geonex/geonexdata/GOES16/GEONEX-L2/MAIAC'
-    output_dir = 'Y:\datasets\images\goes\goes16\geonexl2\maiac'
-    # output_dir = 'datasets\images\goes\goes16\geonexl2\maiac'
+    # output_dir = 'Y:\datasets\images\goes\goes16\geonexl2\maiac'
+    output_dir = 'datasets\images\goes\goes16\geonexl2\maiac'
 
     years_init = 2018
     years_end = 2019
@@ -134,3 +133,4 @@ if __name__ == '__main__':
     # checks for files not downloaded or corrupted
     # for filename, hdf_link in hdf_file_map.items():
     #     redownload_hdf_files(filename, hdf_link)
+
