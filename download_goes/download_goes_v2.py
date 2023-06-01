@@ -5,33 +5,52 @@ import time
 
 # downloads hdf file
 def download_file(url, filename):
+    if website_check(url):
+        # NOTE the stream=True parameter below
+        with requests.get(url, stream=True, timeout=600) as r:
+            r.raise_for_status()
+            with open(filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    # If you have chunk encoded response uncomment if
+                    # and set chunk_size parameter to None.
+                    # if chunk:
+                    f.write(chunk)
+
+
+# checks if website is running
+def website_check(url):
+    retry_delay = 1
+
     while True:
-        if website_check():
-            # NOTE the stream=True parameter below
-            with requests.get(url, stream=True, timeout=600) as r:
-                r.raise_for_status()
-                with open(filename, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        # If you have chunk encoded response uncomment if
-                        # and set chunk_size parameter to None.
-                        # if chunk:
-                        f.write(chunk)
-            break
+        try:
+            response = requests.head(url)
+            if response.status_code == 200:
+                return True
+            else:
+                print(f"Website is not available. Pausing script... {retry_delay} seconds")
+                time.sleep(retry_delay)  # Pause for 60 seconds before checking again
+
+        except requests.ConnectionError:
+            print(f"Website is not available. Pausing script... {retry_delay} seconds")
+            time.sleep(retry_delay)  # Pause for 60 seconds before checking again
+
+        retry_delay *= 2
+
 
 # finds the URLS of the hdf file downloads
 def get_hdf(url_base):
-    while True:
-        if website_check():
-            hdf_list = []
-            url = requests.get(url_base)
-            htmltext = url.text
-            for line in htmltext.split('\n'):
-                if 'href="/geonex' in line:
-                    line_hdf = line.split('href="')[1]
-                    if 'hdf' in line_hdf:
-                        line_hdf1 = "https://data.nas.nasa.gov" + line_hdf.split(".hdf")[0] + ".hdf"
-                        hdf_list.append(line_hdf1)
-            return hdf_list
+    if website_check(url_base):
+        hdf_list = []
+        url = requests.get(url_base)
+        htmltext = url.text
+        for line in htmltext.split('\n'):
+            if 'href="/geonex' in line:
+                line_hdf = line.split('href="')[1]
+                if 'hdf' in line_hdf and 'ABI12B' in line_hdf:
+                    line_hdf1 = "https://data.nas.nasa.gov" + line_hdf.split(".hdf")[0] + ".hdf"
+                    hdf_list.append(line_hdf1)
+        return hdf_list
+
 
 # checks for not downloaded or corrupt files
 def check_hdf_file(file_path):
@@ -65,26 +84,6 @@ def redownload_hdf_files(url, filename):
     print("File cannot be downloaded. Skipping file.")
 
 
-# checks if website is running
-def website_check():
-    url = 'https://data.nas.nasa.gov/geonex/data.php'
-    retry_delay = 1
-
-    while True:
-        try:
-            response = requests.head(url)
-            if response.status_code == 200:
-                return True
-            else:
-                print(f"Website is not available. Pausing script... {retry_delay} seconds")
-                time.sleep(retry_delay)  # Pause for 60 seconds before checking again
-
-        except requests.ConnectionError:
-            print(f"Website is not available. Pausing script... {retry_delay} seconds")
-            time.sleep(retry_delay) # Pause for 60 seconds before checking again
-
-        retry_delay *= 2
-
 if __name__ == '__main__':
     # basiclink = 'https://data.nas.nasa.gov/geonex/geonexdata/GOES16/GEONEX-L1G/'
     # output_dir = 'C:\datasets\images\goes\goes16\geonexl1g'
@@ -98,7 +97,7 @@ if __name__ == '__main__':
 
     dates_init = 1
     dates_end = 365
-    tiles = ['h15v04']  # Amazon 'h20v10', 'h21v10', 'h19v10','h20v09'  # MS h15v04 h14v04 h14v05 h15v05
+    tiles = ['h09v02']  # Amazon 'h20v10', 'h21v10', 'h19v10','h20v09'  # MS h15v04 h14v04 h14v05 h15v05
 
     hdf_file_map = {}  # file name : download url
 
