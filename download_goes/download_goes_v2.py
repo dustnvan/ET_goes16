@@ -97,7 +97,7 @@ if __name__ == '__main__':
     years_end = 2019
 
     dates_init = 1
-    dates_end = 364
+    dates_end = 365
     tiles = ['h15v04']  # Amazon 'h20v10', 'h21v10', 'h19v10','h20v09'  # MS h15v04 h14v04 h14v05 h15v05
 
     hdf_file_map = {}  # file name : download url
@@ -118,7 +118,6 @@ if __name__ == '__main__':
 
                 # creating hdf file name and linking it to its URL
                 for hdf_file in hdf_list:
-                    print(hdf_file)
                     filename_save = rf'{dir_yrdt}\{os.path.basename(hdf_file)}'
                     if not os.path.exists(filename_save):
                         hdf_file_map[filename_save] = hdf_file
@@ -127,6 +126,7 @@ if __name__ == '__main__':
 
                 # downloads hdf file to its corresponding directory
                 for filename, hdf_link in hdf_file_map.items():
+                    print(f"downloading: {hdf_link}")
                     download_file(hdf_link, filename)
 
 
