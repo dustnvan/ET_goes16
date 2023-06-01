@@ -68,6 +68,7 @@ def check_hdf_file(file_path):
         print("HDF file is corrupt:", e)
         return 0
 
+
 # does a file check and attempts to redownload if bad file
 def redownload_hdf_files(url, filename):
     attempts = 0
