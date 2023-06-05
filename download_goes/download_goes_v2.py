@@ -3,28 +3,17 @@ import requests
 import h5py
 import time
 
-# downloads hdf file
-def download_file(url, filename):
-    if website_check(url):
-        # NOTE the stream=True parameter below
-        with requests.get(url, stream=True, timeout=600) as r:
-            r.raise_for_status()
-            with open(filename, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    # If you have chunk encoded response uncomment if
-                    # and set chunk_size parameter to None.
-                    # if chunk:
-                    f.write(chunk)
-
 
 # checks if website is running
-def website_check(url):
+def website_check():
     retry_delay = 1
 
+    url = 'https://data.nas.nasa.gov/geonex/geonexdata/'
     while True:
         try:
             response = requests.head(url)
             if response.status_code == 200:
+                print('working')
                 return True
             else:
                 print(f"Website is not available. Pausing script... {retry_delay} seconds")
@@ -36,13 +25,14 @@ def website_check(url):
 
         retry_delay *= 2
 
-
 # finds the URLS of the hdf file downloads
 def get_hdf(url_base):
-    if website_check(url_base):
+    print('checking')
+    if website_check():
         hdf_list = []
         url = requests.get(url_base)
         htmltext = url.text
+
         for line in htmltext.split('\n'):
             if 'href="/geonex' in line:
                 line_hdf = line.split('href="')[1]
@@ -50,6 +40,20 @@ def get_hdf(url_base):
                     line_hdf1 = "https://data.nas.nasa.gov" + line_hdf.split(".hdf")[0] + ".hdf"
                     hdf_list.append(line_hdf1)
         return hdf_list
+
+
+# downloads hdf file
+def download_file(url, filename):
+    if website_check():
+        # NOTE the stream=True parameter below
+        with requests.get(url, stream=True, timeout=600) as r:
+            r.raise_for_status()
+            with open(filename, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    # If you have chunk encoded response uncomment if
+                    # and set chunk_size parameter to None.
+                    # if chunk:
+                    f.write(chunk)
 
 
 # checks for not downloaded or corrupt files
@@ -126,9 +130,8 @@ if __name__ == '__main__':
 
                 # downloads hdf file to its corresponding directory
                 for filename, hdf_link in hdf_file_map.items():
-                    print(f"downloading: {hdf_link}")
                     download_file(hdf_link, filename)
-
+                    print(f"downloaded: {hdf_link}")
 
     # checks for files not downloaded or corrupted
     # for filename, hdf_link in hdf_file_map.items():
