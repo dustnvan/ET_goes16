@@ -8,12 +8,11 @@ import time
 def website_check():
     retry_delay = 1
 
-    url = 'https://data.nas.nasa.gov/geonex/geonexdata/'
+    url = 'https://data.nas.nasa.gov/geonex/data.php'
     while True:
         try:
             response = requests.head(url)
             if response.status_code == 200:
-                print('working')
                 return True
             else:
                 print(f"Website is not available. Pausing script... {retry_delay} seconds")
@@ -27,7 +26,6 @@ def website_check():
 
 # finds the URLS of the hdf file downloads
 def get_hdf(url_base):
-    print('checking')
     if website_check():
         hdf_list = []
         url = requests.get(url_base)
