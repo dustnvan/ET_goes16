@@ -13,6 +13,45 @@ def img_contrast(imgrgb):
     return enhanced_img
 
 
+def process_bands_1km(src):
+    band_ds = gdal.Open(src.GetSubDatasets()[0][0])  # 1km
+    BANDS_1km = band_ds.ReadAsArray() * 0.0001  # scaling down the values in the matrix by a factor of 0.0001
+    # normalizing data between 0 & 1
+    BANDS_1km = np.where(BANDS_1km < 0, 0, BANDS_1km)
+    BANDS_1km = np.where(BANDS_1km > 1, 1, BANDS_1km)
+    BANDS_1km = BANDS_1km.transpose((1, 2, 0))  # reshapes BANDS_1km from (4, 600, 600) to (600, 600, 4)
+    return BANDS_1km
+
+
+def set_output(path):
+    os.makedirs(path, exist_ok=True)
+    return fr'{path}\{hdf_file.replace(".hdf", ".tif")}'
+
+
+def rgb_plot(red_band, blue_band, nir_band):
+    # prepare the red, green, and blue channel arrays (R, G, and B) for creating an RGB image plot
+    plt.ioff()
+    fig = plt.figure()
+    fig.set_size_inches(8.5, 6.5)
+    R = (red_band * 255).astype(np.uint8)
+    # G = (BAND3_nir * 255).astype(np.uint8)
+    G = (0.45 * red_band) + (0.1 * nir_band) + (0.45 * blue_band)
+    G = (G * 255).astype(np.uint8)
+    B = (blue_band * 255).astype(np.uint8)
+
+    imgrgb = np.dstack((R, G, B))
+
+    imgrgb = img_contrast(imgrgb)
+
+    plt.imshow(imgrgb)
+    plt.yticks([])
+    plt.xticks([])
+    plt.title(hdf_file.split("_")[2][-4:])
+
+    plt.savefig(output_png, bbox_inches='tight', dpi=150)
+    plt.close()
+
+
 import os
 from osgeo import gdal
 import matplotlib.pyplot as plt
@@ -33,8 +72,6 @@ for day in range(1, 2):
     # dirinput = fr'Y:\datasets\images\goes\goes16\geonexl2\maiac\{tile}\{yr}\{day}'
     dirinput = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2\maiac\{tile}\{yr}\{day}'
 
-    # filenm = 'GO16_ABI12B_20181911515_GLBG_h20v10_02.hdf'
-
     hdf_files = os.listdir(dirinput)
 
     # finds and opens ABI12B hdf files
@@ -42,7 +79,6 @@ for day in range(1, 2):
         input_hdf_path = fr'{dirinput}\{hdf_file}'
         src = gdal.Open(input_hdf_path)
 
-        # sur_refl_500m in ABI12B
         # band_ds = src.GetSubDatasets()
         # for i, band in enumerate(band_ds):
         #     print(band)
@@ -54,12 +90,7 @@ for day in range(1, 2):
         # BAND2_red = np.where(BAND2_red > 0.5, 0.5, BAND2_red)
         # BAND2_red = cv2.resize(BAND2_red, dsize=(600, 600), interpolation=cv2.INTER_NEAREST)
 
-        band_ds = gdal.Open(src.GetSubDatasets()[0][0])  # 1km
-        BANDS_1km = band_ds.ReadAsArray() * 0.0001  # scaling down the values in the matrix by a factor of 0.0001
-        # normalizing data between 0 & 1
-        BANDS_1km = np.where(BANDS_1km < 0, 0, BANDS_1km)
-        BANDS_1km = np.where(BANDS_1km > 1, 1, BANDS_1km)
-        BANDS_1km = BANDS_1km.transpose((1, 2, 0))  # reshapes BANDS_1km from (4, 600, 600) to (600, 600, 4)
+        BANDS_1km = process_bands_1km(src)
 
         BAND1_blue = BANDS_1km[:, :, 0]
         BAND2_red = BANDS_1km[:, :, 1]
@@ -79,33 +110,11 @@ for day in range(1, 2):
 
         # giving filepath for output
         # output_ = fr'Y:\datasets\images\goes\goes16\geonexl2\browser\{tile}\{yr}\{day}'
-        output_ = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2\browser\{tile}\{yr}\{day}'
 
-        os.makedirs(output_, exist_ok=True)
-        output_png = fr'{output_}\{hdf_file.replace(".hdf", ".tif")}'
+        output_png = set_output(fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2\browser\{tile}\{yr}\{day}')
 
         arr = (BANDS_1km * 255).astype(np.uint8)  # scaling values for png image pixel values
 
-        # prepare the red, green, and blue channel arrays (R, G, and B) for creating an RGB image plot
-        plt.ioff()
-        fig = plt.figure()
-        fig.set_size_inches(8.5, 6.5)
-        R = (BAND2_red * 255).astype(np.uint8)
-        # G = (BAND3_nir * 255).astype(np.uint8)
-        G = (0.45 * BAND2_red) + (0.1 * BAND3_nir) + (0.45 * BAND1_blue)
-        G = (G * 255).astype(np.uint8)
-        B = (BAND1_blue * 255).astype(np.uint8)
-
-        imgrgb = np.dstack((R, G, B))
-
-        imgrgb = img_contrast(imgrgb)
-
-        plt.imshow(imgrgb)
-        plt.yticks([])
-        plt.xticks([])
-        plt.title(hdf_file.split("_")[2][-4:])
-
-        plt.savefig(output_png, bbox_inches='tight', dpi=150)
-        plt.close()
+        rgb_plot(BAND1_blue, BAND2_red, BAND3_nir)
 
         print("created: ", output_png)
