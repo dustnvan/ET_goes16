@@ -72,35 +72,38 @@ def get_projection():
 
     return dest_wkt
 
-def export_bands(hdf_file, tile, yr, day, h, v):
+
+def create_geotiffs(hdf_file, tile, yr, day, h, v):
     nm_bands = ["blue", "red", "nir"]
 
     for bnd in nm_bands:
-        new_filenm = bnd + '_' + hdf_file + '.tif'
-        new_filenmp = bnd + '_' + hdf_file + '_proj' + '.tif'
+        raster_file = bnd + '_' + hdf_file[:-4] + '.tif'
+        geotiff_file = bnd + '_' + hdf_file[:-4] + '_proj' + '.tif'
         # save_path = fr'C:\Users\carin\PROPOSTA_DISSERTACAO\Dataset\images\GOES16_ABI\{tile}\{yr}\{day}'
-        save_path = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2\maiac\{tile}\{yr}\{day}'
-
-        os.chdir(save_path)
+        output_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2'
+        output_dir = fr'{output_dir}\geotiffs\{tile}\{yr}\{day}\{bnd}'
+        os.makedirs(output_dir, exist_ok=True)  # creates directory for every band
 
         # Here you decide how much of the data you want to export.
         # A single layer vs a stacked / array
         # Export a single band to a geotiff
+        raster_file_path = fr'{output_dir}\{raster_file}'
+
         if bnd == 'blue':
-            blue_band.rio.to_raster(new_filenm)
+            blue_band.rio.to_raster(raster_file_path)
         if bnd == 'red':
-            red_band.rio.to_raster(new_filenm)
+            red_band.rio.to_raster(raster_file_path)
         if bnd == 'nir':
-            nir_band.rio.to_raster(new_filenm)
+            nir_band.rio.to_raster(raster_file_path)
 
-        src_filename = fr'{save_path}\{new_filenm}'
-        dst_filename = fr'{save_path}\{new_filenmp}'
+        # converting to geotiff
+        geotiff_file_path = fr'{output_dir}\{geotiff_file}'
 
-        src_ds = gdal.Open(src_filename)
+        src_ds = gdal.Open(raster_file_path)
         format = "GTiff"
         driver = gdal.GetDriverByName(format)
 
-        dst_ds = driver.CreateCopy(dst_filename, src_ds, 0)
+        dst_ds = driver.CreateCopy(geotiff_file_path, src_ds, 0)
         dst_ds.SetGeoTransform(get_geo_transform(h, v))
         dst_ds.SetProjection(get_projection())
 
@@ -127,6 +130,6 @@ input_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datas
 hdf_files = os.listdir(input_dir)
 
 for hdf_file in hdf_files:
-    image_path = fr'{input_dir}\{hdf_file}'
-    blue_band, red_band, nir_band = extract_bands(image_path)
-    export_bands(hdf_file, tile, yr, day, h, v)
+    hdf_path = fr'{input_dir}\{hdf_file}'
+    blue_band, red_band, nir_band = extract_bands(hdf_path)
+    create_geotiffs(hdf_file, tile, yr, day, h, v)
