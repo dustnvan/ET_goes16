@@ -92,7 +92,7 @@ def create_geotiffs(hdf_file, tile, yr, day, h, v, output_dir):
         # A single layer vs a stacked / array
         # Export a single band to a geotiff
         raster_file_path = fr'{output_dir_b}\{raster_src}'
-
+        print(raster_file_path)
         if bnd == 'blue':
             blue_band.rio.to_raster(raster_file_path)
         if bnd == 'red':
@@ -100,7 +100,7 @@ def create_geotiffs(hdf_file, tile, yr, day, h, v, output_dir):
         if bnd == 'nir':
             nir_band.rio.to_raster(raster_file_path)
 
-        geotiff_file_path = fr'{output_dir}\{raster_dst}'
+        geotiff_file_path = fr'{output_dir_b}\{raster_dst}'
 
         src_ds = gdal.Open(raster_file_path)
         format = "GTiff"
@@ -116,24 +116,39 @@ def create_geotiffs(hdf_file, tile, yr, day, h, v, output_dir):
         print('exported:', geotiff_file_path)
 
 
-# tile = 'h09v02'
-# yr = '2018'
-# day = '001'
-# h = tile[1:3]
-# v = tile[4:6]
-# input_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2\maiac\{tile}\{yr}\{day}'
-# output_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2'
+# date = '1/1/2018'
 
-print("Please select your tile:")
-h = input('h (0-59) : ')
-v = input('v (0-19) : ')
-tile = f'h{h.zfill(2)}v{v.zfill(2)}'
-yr = input('Please select the year: ')
-day = input('Please select the day: ').zfill(3)
+from datetime import datetime
+
+def get_date_from_user():
+    date_str = input("Please enter a date (YYYY-MM-DD or YYYY-MM-DD,YYYY-MM-DD): ")
+    try:
+        if "," in date_str:
+            start_date, end_date = date_str.split(",")
+            start_date = datetime.strptime(start_date.strip(), "%Y-%m-%d")
+            end_date = datetime.strptime(end_date.strip(), "%Y-%m-%d")
+            return start_date.date(), end_date.date()
+        else:
+            date = datetime.strptime(date_str, "%Y-%m-%d")
+            return date.date(), date.date()
+    except ValueError:
+        print("Invalid date format. Please try again.")
+        return get_date_from_user()
 
 
-input_dir = input('Please enter input directory with raster files: ')
-output_dir = input('Please enter path to export geotiff directory: ')
+start_date, end_date = get_date_from_user()
+print("Start date:", start_date)
+print("End date:", end_date)
+
+start_julian = str(start_date.timetuple().tm_yday).zfill(3)
+start_yr = str(start_date.year)
+
+tile = 'h09v02'
+h = tile[1:3]
+v = tile[4:6]
+
+input_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2\maiac\{tile}\{start_yr}\{start_julian}'
+output_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2'
 
 hdf_files = os.listdir(input_dir)
 
@@ -146,4 +161,4 @@ for hdf_file in hdf_files:
     else:
         continue
 
-    create_geotiffs(hdf_file, tile, yr, day, h, v, output_dir)
+    create_geotiffs(hdf_file, tile, start_yr, start_julian, h, v, output_dir)
