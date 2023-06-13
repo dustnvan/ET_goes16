@@ -49,8 +49,8 @@ def get_geo_transform(h, v):
     tile_ydim = 600  # 300 for the 2km grid
 
     # Input information
-    hid = h  # 0 - 59
-    vid = v  # 0 - 19
+    hid = int(h)  # 0 - 59
+    vid = int(v)  # 0 - 19
     x = 0  # column/sample, 0-(tile_xdim-1)
     y = 0  # row/line, 0-(tile_ydim-1)
 
@@ -73,21 +73,19 @@ def get_projection():
     return dest_wkt
 
 
-def create_geotiffs(hdf_file, tile, yr, day, h, v):
+def create_geotiffs(hdf_file, tile, yr, day, h, v, output_dir):
     nm_bands = ["blue", "red", "nir"]
 
     for bnd in nm_bands:
-        raster_file = bnd + '_' + hdf_file[:-4] + '.tif'
-        geotiff_file = bnd + '_' + hdf_file[:-4] + '_proj' + '.tif'
-        # save_path = fr'C:\Users\carin\PROPOSTA_DISSERTACAO\Dataset\images\GOES16_ABI\{tile}\{yr}\{day}'
-        output_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2'
-        output_dir = fr'{output_dir}\geotiffs\{tile}\{yr}\{day}\{bnd}'
-        os.makedirs(output_dir, exist_ok=True)  # creates directory for every band
+        raster_src = bnd + '_' + hdf_file[:-4] + '.tif'
+        raster_dst = bnd + '_' + hdf_file[:-4] + '_proj' + '.tif'
+        output_dir_b = fr'{output_dir}\geotiffs\{tile}\{yr}\{day}\{bnd}'
+        os.makedirs(output_dir_b, exist_ok=True)  # creates directory for every band
 
         # Here you decide how much of the data you want to export.
         # A single layer vs a stacked / array
         # Export a single band to a geotiff
-        raster_file_path = fr'{output_dir}\{raster_file}'
+        raster_file_path = fr'{output_dir_b}\{raster_src}'
 
         if bnd == 'blue':
             blue_band.rio.to_raster(raster_file_path)
@@ -96,40 +94,42 @@ def create_geotiffs(hdf_file, tile, yr, day, h, v):
         if bnd == 'nir':
             nir_band.rio.to_raster(raster_file_path)
 
-        # converting to geotiff
-        geotiff_file_path = fr'{output_dir}\{geotiff_file}'
+        # geotiff_file_path = fr'{output_dir}\{raster_dst}'
+        #
+        # src_ds = gdal.Open(raster_file_path)
+        # format = "GTiff"
+        # driver = gdal.GetDriverByName(format)
+        #
+        # dst_ds = driver.CreateCopy(geotiff_file_path, src_ds, 0)
+        # dst_ds.SetGeoTransform(get_geo_transform(h, v))
+        # dst_ds.SetProjection(get_projection())
+        #
+        # dst_ds = None
+        # src_ds = None
 
-        src_ds = gdal.Open(raster_file_path)
-        format = "GTiff"
-        driver = gdal.GetDriverByName(format)
 
-        dst_ds = driver.CreateCopy(geotiff_file_path, src_ds, 0)
-        dst_ds.SetGeoTransform(get_geo_transform(h, v))
-        dst_ds.SetProjection(get_projection())
-
-        dst_ds = None
-        src_ds = None
-
-
-# tile = 'h16v11'
+# tile = 'h09v02'
 # yr = '2018'
-# day = '273'
-# h = 16
-# v = 11
-#
-# dirinput = fr'C:\Users\carin\PROPOSTA_DISSERTACAO\Dataset\GOES16_ABI\{tile}\{yr}\{day}'
+# day = '001'
+# h = tile[1:3]
+# v = tile[4:6]
+# input_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2\maiac\{tile}\{yr}\{day}'
+# output_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2'
 
-tile = 'h09v02'
-yr = '2018'
-day = '001'
-h = int(tile[1:3])
-v = int(tile[4:6])
+print("Please select your tile:")
+h = input('h (0-59) : ')
+v = input('v (0-19) : ')
+tile = f'h{h.zfill(2)}v{v.zfill(2)}'
+yr = input('Please select the year: ')
+day = input('Please select the day: ').zfill(3)
 
-input_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2\maiac\{tile}\{yr}\{day}'
+
+input_dir = input('Please enter input directory with raster files: ')
+output_dir = input('Please enter path to export geotiff directory: ')
 
 hdf_files = os.listdir(input_dir)
 
 for hdf_file in hdf_files:
     hdf_path = fr'{input_dir}\{hdf_file}'
     blue_band, red_band, nir_band = extract_bands(hdf_path)
-    create_geotiffs(hdf_file, tile, yr, day, h, v)
+    create_geotiffs(hdf_file, tile, yr, day, h, v, output_dir)
