@@ -5,6 +5,8 @@ set_start_method('spawn', force=True)
 import warnings
 
 import rioxarray as rxr
+import rasterio
+from rasterio.errors import RasterioIOError
 
 from osgeo import gdal, osr
 
@@ -12,14 +14,18 @@ warnings.simplefilter('ignore')
 
 
 def extract_bands(image_path):
-    rxr.open_rasterio(image_path,
-                      masked=True,
-                      group="grid1km").squeeze()
     # Open just the bands that you want to process
     desired_bands = ["sur_refl1km"]
     # Notice that here, you get a single xarray object with just the bands that
     # you want to work with
-    image_bands = rxr.open_rasterio(image_path, masked=True, variable=desired_bands).squeeze()
+    try:
+        image_bands = rxr.open_rasterio(image_path, masked=True, variable=desired_bands).squeeze()
+    except RasterioIOError:
+        print(f"Error: Unable to open the file {image_path}")
+        return False
+
+    print("Opened:", image_path)
+
     bands = image_bands.sur_refl1km
 
     blue_band = image_bands.sur_refl1km[0]
@@ -94,18 +100,20 @@ def create_geotiffs(hdf_file, tile, yr, day, h, v, output_dir):
         if bnd == 'nir':
             nir_band.rio.to_raster(raster_file_path)
 
-        # geotiff_file_path = fr'{output_dir}\{raster_dst}'
-        #
-        # src_ds = gdal.Open(raster_file_path)
-        # format = "GTiff"
-        # driver = gdal.GetDriverByName(format)
-        #
-        # dst_ds = driver.CreateCopy(geotiff_file_path, src_ds, 0)
-        # dst_ds.SetGeoTransform(get_geo_transform(h, v))
-        # dst_ds.SetProjection(get_projection())
-        #
-        # dst_ds = None
-        # src_ds = None
+        geotiff_file_path = fr'{output_dir}\{raster_dst}'
+
+        src_ds = gdal.Open(raster_file_path)
+        format = "GTiff"
+        driver = gdal.GetDriverByName(format)
+
+        dst_ds = driver.CreateCopy(geotiff_file_path, src_ds, 0)
+        dst_ds.SetGeoTransform(get_geo_transform(h, v))
+        dst_ds.SetProjection(get_projection())
+
+        dst_ds = None
+        src_ds = None
+
+        print('exported:', geotiff_file_path)
 
 
 # tile = 'h09v02'
@@ -131,5 +139,11 @@ hdf_files = os.listdir(input_dir)
 
 for hdf_file in hdf_files:
     hdf_path = fr'{input_dir}\{hdf_file}'
-    blue_band, red_band, nir_band = extract_bands(hdf_path)
+
+    bands = extract_bands(hdf_path)
+    if bands:
+        blue_band, red_band, nir_band = bands
+    else:
+        continue
+
     create_geotiffs(hdf_file, tile, yr, day, h, v, output_dir)
