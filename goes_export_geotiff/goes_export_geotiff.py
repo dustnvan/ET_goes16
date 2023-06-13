@@ -79,20 +79,19 @@ def get_projection():
     return dest_wkt
 
 
-def create_geotiffs(hdf_file, tile, yr, day, h, v, output_dir):
+def create_geotiffs(hdf_file, tile, yr, date, time, h, v, output_dir):
     nm_bands = ["blue", "red", "nir"]
 
     for bnd in nm_bands:
         raster_src = bnd + '_' + hdf_file[:-4] + '.tif'
         raster_dst = bnd + '_' + hdf_file[:-4] + '_proj' + '.tif'
-        output_dir_b = fr'{output_dir}\geotiffs\{tile}\{yr}\{day}\{bnd}'
+        output_dir_b = fr'{output_dir}\geotiffs\{tile}\{yr}\{date}\{time}'
         os.makedirs(output_dir_b, exist_ok=True)  # creates directory for every band
 
         # Here you decide how much of the data you want to export.
         # A single layer vs a stacked / array
         # Export a single band to a geotiff
         raster_file_path = fr'{output_dir_b}\{raster_src}'
-        print(raster_file_path)
         if bnd == 'blue':
             blue_band.rio.to_raster(raster_file_path)
         if bnd == 'red':
@@ -116,8 +115,6 @@ def create_geotiffs(hdf_file, tile, yr, day, h, v, output_dir):
         print('exported:', geotiff_file_path)
 
 
-# date = '1/1/2018'
-
 from datetime import datetime
 
 def get_date_from_user():
@@ -136,29 +133,48 @@ def get_date_from_user():
         return get_date_from_user()
 
 
-start_date, end_date = get_date_from_user()
-print("Start date:", start_date)
-print("End date:", end_date)
+# tile = 'h09v02'
+# h = tile[1:3]
+# v = tile[4:6]
+#
+# input_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2\maiac'
+# output_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2'
 
-start_julian = str(start_date.timetuple().tm_yday).zfill(3)
+
+# getting coords
+print("Please select your tile:")
+h = input('h (0-59) : ')
+v = input('v (0-19) : ')
+tile = f'h{h.zfill(2)}v{v.zfill(2)}'
+
+# getting date
+start_date, end_date = get_date_from_user()
+
+start_julian = str(start_date.timetuple().tm_yday)
 start_yr = str(start_date.year)
 
-tile = 'h09v02'
-h = tile[1:3]
-v = tile[4:6]
+end_julian = str(end_date.timetuple().tm_yday)
+end_yr = str(end_date.year)
 
-input_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2\maiac\{tile}\{start_yr}\{start_julian}'
-output_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2'
+# getting paths
+input_dir = input('Please enter path to input directory with containing tiles\year\dates (maiac): ')
+output_dir = input('Please enter path to export geotiff directory: ')
 
-hdf_files = os.listdir(input_dir)
+for yr in range(int(start_yr), int(end_yr)+1):
+    input_dir_yr = fr'{input_dir}\{tile}\{yr}'
+    for date in range(int(start_julian), int(end_julian)+1):
+        date = str(date).zfill(3)
+        input_dir_date = fr'{input_dir_yr}\{date}'
+        hdf_files = os.listdir(input_dir_date)
+        for hdf_file in hdf_files:
+            time = hdf_file[19:23]
 
-for hdf_file in hdf_files:
-    hdf_path = fr'{input_dir}\{hdf_file}'
+            hdf_path = fr'{input_dir_date}\{hdf_file}'
 
-    bands = extract_bands(hdf_path)
-    if bands:
-        blue_band, red_band, nir_band = bands
-    else:
-        continue
+            bands = extract_bands(hdf_path)
+            if bands:
+                blue_band, red_band, nir_band = bands
+            else:
+                continue
 
-    create_geotiffs(hdf_file, tile, start_yr, start_julian, h, v, output_dir)
+            create_geotiffs(hdf_file, tile, yr, date, time, h, v, output_dir)
