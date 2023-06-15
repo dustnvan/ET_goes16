@@ -5,7 +5,6 @@ set_start_method('spawn', force=True)
 import warnings
 
 import rioxarray as rxr
-import rasterio
 from rasterio.errors import RasterioIOError
 
 from osgeo import gdal, osr

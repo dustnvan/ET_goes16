@@ -65,7 +65,7 @@ subset_position_QA = 1
 tile = 'h09v02'
 yr = '2018'
 
-for day in range(1, 2):
+for day in range(1, ):
 
     day = str(day).zfill(3)
 
