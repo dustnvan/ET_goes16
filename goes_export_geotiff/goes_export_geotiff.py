@@ -136,8 +136,8 @@ def get_date_from_user():
 # h = tile[1:3]
 # v = tile[4:6]
 #
-# input_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2\maiac'
-# output_dir = fr'C:\Users\dusti\Desktop\GCERlab\GCERLAB_Dustin\download_goes\datasets\images\goes\goes16\geonexl2'
+# input_dir = fr'C:\Users\dusti\Desktop\GCERlab\ET_goes16\download_goes\datasets\images\goes\goes16\geonexl2\maiac'
+# output_dir = fr'C:\Users\dusti\Desktop\GCERlab\ET_goes16\download_goes\datasets\images\goes\goes16\geonexl2'
 
 
 # getting coords

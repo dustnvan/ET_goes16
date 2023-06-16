@@ -100,7 +100,7 @@ if __name__ == '__main__':
 
     dates_init = 1
     dates_end = 365
-    tiles = ['h09v02']  # Amazon 'h20v10', 'h21v10', 'h19v10','h20v09'  # MS h15v04 h14v04 h14v05 h15v05
+    tiles = ['h14v04']  # Amazon 'h20v10', 'h21v10', 'h19v10','h20v09'  # MS h15v04 h14v04 h14v05 h15v05
 
     hdf_file_map = {}  # file name : download url
 
