@@ -1,0 +1,12 @@
+<PAMDataset>
+  <PAMRasterBand band="1">
+    <Description>Surface bidirectinal reflectance factor for 1km bands</Description>
+    <Metadata>
+      <MDI key="STATISTICS_MAXIMUM">1410</MDI>
+      <MDI key="STATISTICS_MEAN">750.46116504854</MDI>
+      <MDI key="STATISTICS_MINIMUM">30</MDI>
+      <MDI key="STATISTICS_STDDEV">346.92165807479</MDI>
+      <MDI key="STATISTICS_VALID_PERCENT">0.05722</MDI>
+    </Metadata>
+  </PAMRasterBand>
+</PAMDataset>
