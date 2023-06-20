@@ -110,10 +110,9 @@ import numpy as np
 def calculate_ndvi(nir, red):
     valid_pixels = (nir >= 0) & (red >= 0)
     ndvi_band = np.zeros_like(nir, dtype=np.float32)
-
-    ndvi_band[valid_pixels] = (nir[valid_pixels] - red[valid_pixels]) / (nir[valid_pixels] + red[valid_pixels])
-    ndvi_band[~valid_pixels] = np.nan
+    ndvi_band = np.where(valid_pixels, (nir - red) / (nir + red), np.nan)
     return ndvi_band
+
 
 
 from osgeo import gdal
@@ -122,9 +121,7 @@ from osgeo import gdal
 def calculate_savi(nir, red):
     soil_factor = 0.5
     valid_pixels = (nir >= 0) & (red >= 0)
-    savi_band = np.zeros_like(nir, dtype=np.float32)
-    savi_band[valid_pixels] = ((1 + soil_factor) * (nir[valid_pixels] - red[valid_pixels])) / (nir[valid_pixels] + red[valid_pixels] + soil_factor)
-    savi_band[~valid_pixels] = np.nan
+    savi_band = np.where(valid_pixels,((1 + soil_factor) * (nir - red)) / (nir + red + soil_factor),np.nan)
     return savi_band
 
 def export_geotiff(src_dataset, band, output_path):
@@ -168,7 +165,9 @@ def export_savi_ndvi(nir_path, red_path):
 
 
 # Paths to NIR and red GeoTIFF files
-nir_path = r'C:\Users\dusti\Desktop\GCERlab\ET_goes16\download_goes\datasets\images\goes\goes16\geonexl2\geotiffs\h14v04\2018\001\1600\nir_GO16_ABI12B_20180011600_GLBG_h14v04_02_proj.tif'
-red_path = r'C:\Users\dusti\Desktop\GCERlab\ET_goes16\download_goes\datasets\images\goes\goes16\geonexl2\geotiffs\h14v04\2018\001\1600\red_GO16_ABI12B_20180011600_GLBG_h14v04_02_proj.tif'
+# nir_path = r'C:\Users\dusti\Desktop\GCERlab\ET_goes16\download_goes\datasets\images\goes\goes16\geonexl2\geotiffs\h14v04\2018\001\1600\nir_GO16_ABI12B_20180011600_GLBG_h14v04_02_proj.tif'
+# red_path = r'C:\Users\dusti\Desktop\GCERlab\ET_goes16\download_goes\datasets\images\goes\goes16\geonexl2\geotiffs\h14v04\2018\001\1600\red_GO16_ABI12B_20180011600_GLBG_h14v04_02_proj.tif'
 
+nir_path = r'C:\Users\dnv22\Desktop\ET_goes16\download_goes\datasets\images\goes\goes16\geonexl2\geotiffs\h14v04\2018\001\1600\nir_GO16_ABI12B_20180011600_GLBG_h14v04_02_proj.tif'
+red_path= r'C:\Users\dnv22\Desktop\ET_goes16\download_goes\datasets\images\goes\goes16\geonexl2\geotiffs\h14v04\2018\001\1600\red_GO16_ABI12B_20180011600_GLBG_h14v04_02_proj.tif'
 export_savi_ndvi(nir_path, red_path)
