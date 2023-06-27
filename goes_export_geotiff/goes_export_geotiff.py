@@ -4,10 +4,12 @@ set_start_method('spawn', force=True)
 
 import warnings
 
+from osgeo import gdal, osr
+
 import rioxarray as rxr
 from rasterio.errors import RasterioIOError
 
-from osgeo import gdal, osr
+from datetime import datetime, timedelta
 
 warnings.simplefilter('ignore')
 
@@ -23,7 +25,6 @@ def extract_bands(image_path):
         print(f"Error: Unable to open the file {image_path}")
         return False
 
-    print("Opened:", image_path)
 
     bands = image_bands.sur_refl1km
 
@@ -80,17 +81,20 @@ def get_projection():
 
 def create_geotiffs(hdf_file, tile, yr, date, time, h, v, output_dir):
     nm_bands = ["blue", "red", "nir"]
+    geotiff_file_paths = []
 
     for bnd in nm_bands:
         raster_src = bnd + '_' + hdf_file[:-4] + '.tif'
         raster_dst = bnd + '_' + hdf_file[:-4] + '_proj' + '.tif'
-        output_dir_b = fr'{output_dir}\geotiffs\{tile}\{yr}\{date}\{time}'
+
+        output_dir_b = os.path.join(output_dir, 'geotiffs', tile, str(yr), date, time)
+
         os.makedirs(output_dir_b, exist_ok=True)  # creates directory for every band
 
         # Here you decide how much of the data you want to export.
         # A single layer vs a stacked / array
         # Export a single band to a geotiff
-        raster_file_path = fr'{output_dir_b}\{raster_src}'
+        raster_file_path = os.path.join(output_dir_b, raster_src)
         if bnd == 'blue':
             blue_band.rio.to_raster(raster_file_path)
         if bnd == 'red':
@@ -98,7 +102,7 @@ def create_geotiffs(hdf_file, tile, yr, date, time, h, v, output_dir):
         if bnd == 'nir':
             nir_band.rio.to_raster(raster_file_path)
 
-        geotiff_file_path = fr'{output_dir_b}\{raster_dst}'
+        geotiff_file_path = os.path.join(output_dir_b, raster_dst)
 
         src_ds = gdal.Open(raster_file_path)
         format = "GTiff"
@@ -111,10 +115,11 @@ def create_geotiffs(hdf_file, tile, yr, date, time, h, v, output_dir):
         dst_ds = None
         src_ds = None
 
+        geotiff_file_paths.append(geotiff_file_path)
+
         print('exported:', geotiff_file_path)
 
-
-from datetime import datetime
+    return geotiff_file_paths
 
 def get_date_from_user():
     date_str = input("Please enter a date (YYYY-MM-DD or YYYY-MM-DD,YYYY-MM-DD): ")
@@ -132,48 +137,75 @@ def get_date_from_user():
         return get_date_from_user()
 
 
-# tile = 'h09v02'
-# h = tile[1:3]
-# v = tile[4:6]
-#
-# input_dir = fr'C:\Users\dusti\Desktop\GCERlab\ET_goes16\download_goes\datasets\images\goes\goes16\geonexl2\maiac'
-# output_dir = fr'C:\Users\dusti\Desktop\GCERlab\ET_goes16\download_goes\datasets\images\goes\goes16\geonexl2'
+from export_savi_ndvi import export_savi_ndvi
 
+date = input('Enter julian date start and end YYYYDDD YYYYDDD: ')
+date = date.split(' ')
 
-# getting coords
-print("Please select your tile:")
-h = input('h (0-59) : ')
-v = input('v (0-19) : ')
-tile = f'h{h.zfill(2)}v{v.zfill(2)}'
-
-# getting date
-start_date, end_date = get_date_from_user()
-
-start_julian = str(start_date.timetuple().tm_yday)
-start_yr = str(start_date.year)
-
-end_julian = str(end_date.timetuple().tm_yday)
-end_yr = str(end_date.year)
+start_date = datetime.strptime(date[0], '%Y%j')
+end_date = datetime.strptime(date[1], '%Y%j')
 
 # getting paths
-input_dir = input('Please enter path to input directory with containing tiles\year\dates (maiac): ')
-output_dir = input('Please enter path to export geotiff directory: ')
+input_dir = r'Z:\dustin\goes\geonex_l2\data_raw'
+output_dir = os.path.dirname(input_dir)
 
-for yr in range(int(start_yr), int(end_yr)+1):
-    input_dir_yr = fr'{input_dir}\{tile}\{yr}'
-    for date in range(int(start_julian), int(end_julian)+1):
-        date = str(date).zfill(3)
-        input_dir_date = fr'{input_dir_yr}\{date}'
-        hdf_files = os.listdir(input_dir_date)
-        for hdf_file in hdf_files:
-            time = hdf_file[19:23]
+tile = input('Choose a tile (h14v03 h14v04 h15v03 h15v04): ')
+h = tile[1:3]
+v = tile[4:6]
 
-            hdf_path = fr'{input_dir_date}\{hdf_file}'
+current_date = start_date
 
+while current_date <= end_date:
+    current_yr = str(current_date.year)
+    current_julian = current_date.strftime('%j')
+
+    input_dir_yr = os.path.join(input_dir, tile, current_yr)  # input_dir\tile\year
+
+    input_dir_date = os.path.join(input_dir_yr, current_julian)  # input_dir\tile\yr\day
+    hdf_files = os.listdir(input_dir_date)
+    for hdf_file in hdf_files:
+        if (hdf_file.endswith('.hdf') and 'ABI12B' in hdf_file):
+            spilt_file = hdf_file.split('_')
+            time = spilt_file[2][7:11]
+
+            hdf_path = os.path.join(input_dir_date, hdf_file)  # input_dir\tile\yr\day\{.hdf file}
             bands = extract_bands(hdf_path)
             if bands:
                 blue_band, red_band, nir_band = bands
             else:
                 continue
 
-            create_geotiffs(hdf_file, tile, yr, date, time, h, v, output_dir)
+            blue_geo_path, red_geo_path, nir_geo_path = create_geotiffs(hdf_file, tile, current_yr, current_julian, time, h, v,
+                                                                        output_dir)
+
+            export_savi_ndvi(nir_geo_path, red_geo_path)
+
+    current_date += timedelta(days=1)
+
+
+# for yr in range(int(start_yr), int(end_yr)+1):
+#     h = tile[1:3]
+#     v = tile[4:6]
+#
+#     input_dir_yr = os.path.join(input_dir, tile, str(yr))  # input_dir\tile\year
+#
+#     for date in range(int(start_julian), int(end_julian)+1):
+#         date = str(date).zfill(3)
+#         input_dir_date = os.path.join(input_dir_yr, date)  # input_dir\tile\yr\day
+#         hdf_files = os.listdir(input_dir_date)
+#
+#         for hdf_file in hdf_files:
+#             if (hdf_file.endswith('.hdf') and 'ABI12B' in hdf_file):
+#                 spilt_file = hdf_file.split('_')
+#                 time = spilt_file[2][7:11]
+#
+#                 hdf_path = os.path.join(input_dir_date, hdf_file)  # input_dir\tile\yr\day\{.hdf file}
+#                 bands = extract_bands(hdf_path)
+#                 if bands:
+#                     blue_band, red_band, nir_band = bands
+#                 else:
+#                     continue
+#
+#                 blue_geo_path, red_geo_path, nir_geo_path = create_geotiffs(hdf_file, tile, yr, date, time, h, v, output_dir)
+#
+#                 export_savi_ndvi(nir_geo_path, red_geo_path)
