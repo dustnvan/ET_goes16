@@ -2,8 +2,9 @@ import os
 import glob
 import re
 
-# Define the path to the geotiff directory
+# Define the path to the geotiff directory which contains all tiles
 geotiff_directory = "Z:\dustin\goes\geonex_l2\geotiffs"
+numOfTiles = len(os.listdir(geotiff_directory))
 
 geotiff_files = glob.glob(os.path.join(geotiff_directory, "**/*proj.tif"), recursive=True)  # list of fullpaths to geotiff files
 
@@ -25,7 +26,7 @@ print('hashmap created')
 
 # Step 4: Check if the four tiles have that time
 for key, value in hashm.items():
-    if len(value) == 4:
+    if len(value) == numOfTiles:
         # Step 5: Perform the desired action with the four file paths
 
         # making new file path from Z:\dustin\goes\geonex_l2\geotiffs\h14v03\2018\001\1415
