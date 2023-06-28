@@ -4,14 +4,11 @@ import os
 
 # checks if website is running
 def make_request(url, stream=False, timeout=None):
-    # uncomment if website check not needed
-    # return True
-
     retry_delay = 1
 
     while True:
         try:
-            response = requests.get(url_base, stream=stream, timeout=timeout)
+            response = requests.get(url, stream=stream, timeout=timeout)
             if response.status_code == 200:
                 return response
             else:
