@@ -5,6 +5,7 @@ def retrieve_geotiffs(geotiff_dir, tiles):
     print('Retrieving geotiff files')
     geotiff_files = []
     for tile in tiles:
+        tile.strip()
         geotiff_files.extend(glob.glob(os.path.join(geotiff_dir, f"{tile}/**/*proj.tif"), recursive=True))   # list of fullpaths to geotiff files
         print(f'Found geotiffs for tile {tile}')
 
@@ -66,8 +67,8 @@ def merge_geotiffs(geotiff_files, numTiles):
 
             print('exported: ', os.path.basename(mosaic_path))
 
-            # finish by removing key and the geotiffs we just merged
-            del hashmap[key]
+            # finish by emptying key and removing the geotiffs we just merged
+            hashmap[key] = []
 
 
 # Define the path to the geotiff directory which contains all tiles
