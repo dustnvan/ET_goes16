@@ -181,31 +181,3 @@ while current_date <= end_date:
             export_savi_ndvi(nir_geo_path, red_geo_path)
 
     current_date += timedelta(days=1)
-
-
-# for yr in range(int(start_yr), int(end_yr)+1):
-#     h = tile[1:3]
-#     v = tile[4:6]
-#
-#     input_dir_yr = os.path.join(input_dir, tile, str(yr))  # input_dir\tile\year
-#
-#     for date in range(int(start_julian), int(end_julian)+1):
-#         date = str(date).zfill(3)
-#         input_dir_date = os.path.join(input_dir_yr, date)  # input_dir\tile\yr\day
-#         hdf_files = os.listdir(input_dir_date)
-#
-#         for hdf_file in hdf_files:
-#             if (hdf_file.endswith('.hdf') and 'ABI12B' in hdf_file):
-#                 spilt_file = hdf_file.split('_')
-#                 time = spilt_file[2][7:11]
-#
-#                 hdf_path = os.path.join(input_dir_date, hdf_file)  # input_dir\tile\yr\day\{.hdf file}
-#                 bands = extract_bands(hdf_path)
-#                 if bands:
-#                     blue_band, red_band, nir_band = bands
-#                 else:
-#                     continue
-#
-#                 blue_geo_path, red_geo_path, nir_geo_path = create_geotiffs(hdf_file, tile, yr, date, time, h, v, output_dir)
-#
-#                 export_savi_ndvi(nir_geo_path, red_geo_path)

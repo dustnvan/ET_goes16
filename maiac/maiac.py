@@ -1,50 +1,80 @@
 import os
 import glob
 import re
+def retrieve_geotiffs(geotiff_dir, tiles):
+    print('Retrieving geotiff files')
+    geotiff_files = []
+    for tile in tiles:
+        geotiff_files.extend(glob.glob(os.path.join(geotiff_dir, f"{tile}/**/*proj.tif"), recursive=True))   # list of fullpaths to geotiff files
+        print(f'Found geotiffs for tile {tile}')
+
+    return geotiff_files  # list of full paths to every geotiff file in all tiles
+
+# this is for knowing which times from every tile we can merge
+def band_time_hashm(geotiff_files):
+    hashm = {}
+    for file_path in geotiff_files:
+        # From every tile, we want to grab the tiles with matching band and exact time
+        band_substring = os.path.basename(file_path).split("_")[0]  # getting the band from the geotiff file name
+        time_substring = os.path.basename(file_path).split("_")[3]  # getting the time from the geotiff file name
+
+        substring_gen = band_substring + time_substring
+
+        # Hashmap hasm['band+time'] = path to every geotiff file with that band and time
+        if substring_gen in hashm:
+            hashm[band_substring + time_substring].append(file_path)
+        else:
+            hashm[band_substring + time_substring] = [file_path]
+
+    print('hashmap created')
+    return hashm
+
+def change_path(geotiff_path):
+    # Converting geotiffs\{tile}\{year}\{date}\{clocktime}\{band}_GO16_ABI12B_{time}_GLBG_{tile}_proj.tif
+    # to mosaic\{year}\{date}\{clocktime}\mosaic_{band}_GO16_ABI12B_{time}_GLBG_{tile}_proj.tif
+
+    replacements = {
+        "geotiffs": "mosaic",
+        "savi": "mosaic_savi",
+        "ndvi": "mosaic_ndvi",
+        "red": "mosaic_red",
+        "blue": "mosaic_blue",
+        "nir": "mosaic_nir"
+    }
+
+    mosaic_path = re.sub(r"\\h\d{2}v\d{2}", "", geotiff_path, count=1)
+    mosaic_path = re.sub(r"h\d{2}v\d{2}_", "", mosaic_path)
+
+    for old, new in replacements.items():
+        mosaic_path = mosaic_path.replace(old, new)
+
+    return mosaic_path
+
+def merge_geotiffs(geotiff_files, numTiles):
+    hashmap = band_time_hashm(geotiff_files)
+
+    for key, geotiff_paths in hashmap.items():
+
+        # Makes sure that we only merge geotiff files that can be found in every tile at that time
+        # Some tiles have certain times that others don't
+        if len(geotiff_paths) == numTiles:
+            mosaic_path = change_path(geotiff_paths[0])
+            os.makedirs(os.path.dirname(mosaic_path), exist_ok=True)
+
+            command = "gdalwarp -overwrite -wo COLOR_CORRECTION=YES " + ' '.join(geotiff_paths) + " " + mosaic_path
+            os.system(command)
+
+            print('exported: ', os.path.basename(mosaic_path))
+
+            # finish by removing key and the geotiffs we just merged
+            del hashmap[key]
+
 
 # Define the path to the geotiff directory which contains all tiles
 geotiff_directory = "Z:\dustin\goes\geonex_l2\geotiffs"
-numOfTiles = len(os.listdir(geotiff_directory))
+tiles = input('Select which tiles to merge (h14v03 h15v03 h14v04 h15v04): ')
+tiles = tiles.split(' ')
+numOfTiles = len(tiles)
 
-geotiff_files = glob.glob(os.path.join(geotiff_directory, "**/*proj.tif"), recursive=True)  # list of fullpaths to geotiff files
-
-# Step 1: Iterate over each file
-hashm = {}
-for file_path in geotiff_files:
-    band_substring = os.path.basename(file_path).split("_")[0]  # getting the band from the geotiff file name
-    time_substring = os.path.basename(file_path).split("_")[3]  # getting the time from the geotiff file name
-
-    substring_gen = band_substring + time_substring
-
-    # Step 3: Create dictionary with substrings as keys and corresponding file paths as values
-    if substring_gen in hashm:
-        hashm[band_substring + time_substring].append(file_path)
-    else:
-        hashm[band_substring + time_substring] = [file_path]
-
-print('hashmap created')
-
-# Step 4: Check if the four tiles have that time
-for key, value in hashm.items():
-    if len(value) == numOfTiles:
-        # Step 5: Perform the desired action with the four file paths
-
-        # making new file path from Z:\dustin\goes\geonex_l2\geotiffs\h14v03\2018\001\1415
-        mosaic_path = re.sub(r'h\d+v\d+', '', value[0])
-        mosaic_path= mosaic_path.replace("geotiffs", "mosaic")
-        mosaic_path = mosaic_path.replace("savi", "mosaic_savi")
-        mosaic_path = mosaic_path.replace("ndvi", "mosaic_ndvi")
-        mosaic_path = mosaic_path.replace("red", "mosaic_red")
-        mosaic_path = mosaic_path.replace("blue", "mosaic_blue")
-        mosaic_path = mosaic_path.replace("nir", "mosaic_nir")
-
-        os.makedirs(os.path.dirname(mosaic_path), exist_ok=True)
-
-        command = "gdalwarp -overwrite -wo COLOR_CORRECTION=YES " + ' '.join(value) + " " + mosaic_path
-
-        os.system(command)
-
-        print('exported: ', os.path.basename(mosaic_path))
-        # Step 6: Remove or mark the processed files to avoid repeating the action
-        for file_path in value:
-            geotiff_files.remove(file_path)
+geotiff_files = retrieve_geotiffs(geotiff_directory, tiles)
+merge_geotiffs(geotiff_files, numOfTiles)
