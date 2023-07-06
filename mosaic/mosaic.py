@@ -1,15 +1,19 @@
 import os
 import glob
 import re
-def retrieve_geotiffs(geotiff_dir, tiles):
+from datetime import datetime, timedelta
+def retrieve_geotiffs(geotiff_dir, tiles, year, date):
     print('Retrieving geotiff files')
     geotiff_files = []
     for tile in tiles:
         tile.strip()
-        geotiff_files.extend(glob.glob(os.path.join(geotiff_dir, f"{tile}/**/*proj.tif"), recursive=True))   # list of fullpaths to geotiff files
+        geotiff_files.extend(glob.glob(os.path.join(geotiff_dir, tile, year, date, '**', '*proj.tif')))   # list of fullpaths to geotiff files
         print(f'Found geotiffs for tile {tile}')
+        print(os.path.join(geotiff_dir, tile, year, date))
 
+    print(geotiff_files)
     return geotiff_files  # list of full paths to every geotiff file in all tiles
+
 
 # this is for knowing which times from every tile we can merge
 def band_time_hashm(geotiff_files):
@@ -65,7 +69,7 @@ def merge_geotiffs(geotiff_files, numTiles):
             command = "gdalwarp -overwrite -wo COLOR_CORRECTION=YES " + ' '.join(geotiff_paths) + " " + mosaic_path
             os.system(command)
 
-            print('exported: ', os.path.basename(mosaic_path))
+            print('exported: ', mosaic_path)
 
             # finish by emptying key and removing the geotiffs we just merged
             hashmap[key] = []
@@ -73,9 +77,24 @@ def merge_geotiffs(geotiff_files, numTiles):
 
 # Define the path to the geotiff directory which contains all tiles
 geotiff_directory = "Z:\dustin\goes\geonex_l2\geotiffs"
-tiles = input('Select which tiles to merge (h14v03 h15v03 h14v04 h15v04): ')
+
+date = input('Enter julian date start and end YYYYDDD YYYYDDD: ')
+date = date.split(' ')
+start_date = datetime.strptime(date[0], '%Y%j')
+end_date = datetime.strptime(date[1], '%Y%j')
+
+tiles = input('Select which tiles to merge (h14v03 h15v03 h14v04 h15v04) : ')
 tiles = tiles.split(' ')
 numOfTiles = len(tiles)
 
-geotiff_files = retrieve_geotiffs(geotiff_directory, tiles)
-merge_geotiffs(geotiff_files, numOfTiles)
+current_date = start_date
+while current_date <= end_date:
+    current_yr = str(current_date.year)
+    current_julian = current_date.strftime('%j')
+
+    geotiff_files = retrieve_geotiffs(geotiff_directory, tiles, current_yr, current_julian)
+    merge_geotiffs(geotiff_files, numOfTiles)
+    current_date += timedelta(days=1)
+
+
+
