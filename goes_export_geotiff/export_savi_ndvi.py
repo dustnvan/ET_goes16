@@ -2,17 +2,16 @@ from osgeo import gdal
 import numpy as np
 # calculating SAVI and NDVI
 
-# calculate savi from landsat bands and export geotiff
-# make mask
+noDataVal = -28672
 def calculate_ndvi(nir, red):
-    valid_pixels = (nir >= 0) & (red >= 0)
-    ndvi_band = np.where(valid_pixels, (nir - red) / (nir + red), np.nan)
+    valid_mask = np.where(nir!=noDataVal, True, False) & np.where(red!=noDataVal, True,False)
+    ndvi_band = np.where(valid_mask, (nir - red) / (nir + red), np.nan)
     return ndvi_band
 
 # Function to calculate SAVI
 def calculate_savi(nir, red):
     soil_factor = 0.5
-    valid_pixels = (nir >= 0) & (red >= 0)
+    valid_pixels = (nir > noDataVal) & (red > noDataVal)
     savi_band = np.where(valid_pixels,((1 + soil_factor) * (nir - red)) / (nir + red + soil_factor),np.nan)
     return savi_band
 
