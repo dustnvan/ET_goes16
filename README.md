@@ -13,6 +13,6 @@ This repository contains multiple scripts with the goal of getting the necessary
   - Here's a good illustration: <br /> ![Mosaic Example](https://desktop.arcgis.com/en/arcmap/latest/manage-data/raster-and-images/GUID-BCA5B031-B811-424B-9F54-BAB2224FBAD0-web.gif)
   - In this step, we also combined every mosaic from a given day by using median compositing. This process finds the corresponding pixels of the images on a given day and calculates the median between those pixel reflectance values. We chose to ignore the images outside the times 9 am - 3 pm when calculating the median because the images weren't as useful without sunlight.
 
-###plot_ndvi 
+### plot_ndvi 
 - Includes a script to plot NDVI to easily view NDVI values of a given day
 - There is also a plot that can, given coordinates inside the mosaic, will plot the NDVI of that location for every given day the year that the satellite images were captured.
